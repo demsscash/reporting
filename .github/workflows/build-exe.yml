@@ -1,0 +1,101 @@
+name: 🏦 Build BANKILY Windows Executables
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas openpyxl xlrd reportlab tkcalendar pyinstaller
+        
+    - name: 🏗️ Build Hub executable
+      run: |
+        pyinstaller --onefile --windowed --name="BANKILY_Generator_Hub" --icon=assets/bankily.ico bankily_generator_hub.py
+      continue-on-error: true
+        
+    - name: 🏢 Build Centres executable
+      run: |
+        pyinstaller --onefile --windowed --name="BANKILY_Multi_Centres" --icon=assets/bankily.ico interface_multi_centres.py
+      continue-on-error: true
+        
+    - name: 🛒 Build Commercants executable
+      run: |
+        pyinstaller --onefile --windowed --name="BANKILY_Multi_Commercants" --icon=assets/bankily.ico interface_multi_commercants.py
+      continue-on-error: true
+        
+    - name: 👤 Build Agents executable
+      run: |
+        pyinstaller --onefile --windowed --name="BANKILY_Multi_Agents" --icon=assets/bankily.ico interface_multi_agents.py
+      continue-on-error: true
+    
+    - name: 📁 List built files
+      run: |
+        echo "=== Files in dist folder ==="
+        if (Test-Path "dist") { Get-ChildItem dist -Recurse } else { echo "No dist folder found" }
+        echo "=== All Python files ==="
+        Get-ChildItem *.py
+      shell: powershell
+    
+    - name: 📦 Create release package
+      run: |
+        mkdir release_package
+        if (Test-Path "dist") {
+          Copy-Item dist/*.exe release_package/ -ErrorAction SilentlyContinue
+        }
+        if (Test-Path "assets") {
+          Copy-Item assets release_package/assets -Recurse -ErrorAction SilentlyContinue
+        }
+        echo "BANKILY Generator Package - Windows Executables" > release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "Files included:" >> release_package/README.txt
+        echo "- BANKILY_Generator_Hub.exe (Main application)" >> release_package/README.txt
+        echo "- BANKILY_Multi_Centres.exe" >> release_package/README.txt
+        echo "- BANKILY_Multi_Commercants.exe" >> release_package/README.txt
+        echo "- BANKILY_Multi_Agents.exe" >> release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "Usage:" >> release_package/README.txt
+        echo "1. Run BANKILY_Generator_Hub.exe to access the main menu" >> release_package/README.txt
+        echo "2. Or run individual generators directly" >> release_package/README.txt
+        echo "3. Make sure all .exe files are in the same folder" >> release_package/README.txt
+      shell: powershell
+    
+    - name: 🎯 Upload executables
+      uses: actions/upload-artifact@v4
+      with:
+        name: BANKILY-Windows-Executables-${{ github.sha }}
+        path: release_package/
+        retention-days: 30
+    
+    - name: 📊 Build summary
+      run: |
+        echo "## 🏦 BANKILY Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Build completed successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Generated files:" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏦 BANKILY_Generator_Hub.exe (Main menu)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏢 BANKILY_Multi_Centres.exe" >> $GITHUB_STEP_SUMMARY
+        echo "- 🛒 BANKILY_Multi_Commercants.exe" >> $GITHUB_STEP_SUMMARY
+        echo "- 👤 BANKILY_Multi_Agents.exe" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Download:" >> $GITHUB_STEP_SUMMARY
+        echo "Go to the **Actions** tab and download the artifact named:" >> $GITHUB_STEP_SUMMARY
+        echo "\`BANKILY-Windows-Executables-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+      shell: bash
