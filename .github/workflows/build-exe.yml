@@ -25,25 +25,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas openpyxl xlrd reportlab tkcalendar pyinstaller
         
-    - name: 🏗️ Build Hub executable
+    - name: 🏗️ Build Hub executable with spec
       run: |
-        pyinstaller --onefile --windowed --name="BANKILY_Generator_Hub" --icon=assets/bankily.ico bankily_generator_hub.py
-      continue-on-error: true
+        pyinstaller bankily_hub.spec
         
-    - name: 🏢 Build Centres executable
+    - name: 🏢 Build Centres executable with spec  
       run: |
-        pyinstaller --onefile --windowed --name="BANKILY_Multi_Centres" --icon=assets/bankily.ico interface_multi_centres.py
-      continue-on-error: true
+        pyinstaller centres.spec
         
-    - name: 🛒 Build Commercants executable
+    - name: 🛒 Build Commercants executable with spec
       run: |
-        pyinstaller --onefile --windowed --name="BANKILY_Multi_Commercants" --icon=assets/bankily.ico interface_multi_commercants.py
-      continue-on-error: true
+        pyinstaller commercants.spec
         
-    - name: 👤 Build Agents executable
+    - name: 👤 Build Agents executable with spec
       run: |
-        pyinstaller --onefile --windowed --name="BANKILY_Multi_Agents" --icon=assets/bankily.ico interface_multi_agents.py
-      continue-on-error: true
+        pyinstaller agents.spec
     
     - name: 📁 List built files
       run: |
