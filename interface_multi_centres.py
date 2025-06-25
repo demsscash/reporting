@@ -341,12 +341,12 @@ class RapportMultiCentresGUI:
     
     def check_logos(self):
         """Vérifie logos existants"""
-        if os.path.exists("bpm.png"):
-            self.logo_bpm = "bpm.png"
+        if os.path.exists("assets/bpm.png"):
+            self.logo_bpm = "assets/bpm.png"
             self.bpm_label.config(text="bpm.png ✅", fg='green')
         
-        if os.path.exists("bankily.png"):
-            self.logo_bankily = "bankily.png"
+        if os.path.exists("assets/bankily.png"):
+            self.logo_bankily = "assets/bankily.png"
             self.bankily_label.config(text="bankily.png ✅", fg='green')
     
     def set_today_dates(self):
