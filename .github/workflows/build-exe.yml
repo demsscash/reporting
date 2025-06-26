@@ -292,6 +292,6 @@ timeout /t 5 /nobreak >nul
         echo "### ⚠️ INSTRUCTIONS IMPORTANTES:" >> $GITHUB_STEP_SUMMARY
         echo "1. **Tous les .exe doivent être dans le même dossier**" >> $GITHUB_STEP_SUMMARY
         echo "2. **Lancez toujours le Hub principal en premier**" >> $GITHUB_STEP_SUMMARY
-        echo "3. **Si problème: utilisez LANCER_BANKILY.bat**" >> $GITHUB_STEP_SUMMARY
+        echo "3. **Si le problème: utilisez LANCER_BANKILY.bat**" >> $GITHUB_STEP_SUMMARY
         echo "4. **Ajoutez une exception antivirus si nécessaire**" >> $GITHUB_STEP_SUMMARY
       shell: bash
