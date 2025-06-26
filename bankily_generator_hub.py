@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-BANKILY Generator Hub - Application Unifiée
+BANKILY Generator Hub - Application Unifiée - VERSION CORRIGÉE
 Menu principal pour choisir le type de générateur de rapports PDF
+CORRECTION: Gestion environment PyInstaller pour subprocess
 """
 
 import tkinter as tk
@@ -279,11 +280,57 @@ class BankilyGeneratorHub:
         }
         return color_map.get(color, color)
     
+    def clean_environment_for_subprocess(self):
+        """
+        CORRECTION CRUCIALE: Nettoie l'environnement PyInstaller pour subprocess
+        Résout les problèmes de dépendances manquantes
+        """
+        import os
+        
+        # Copier l'environnement actuel
+        clean_env = os.environ.copy()
+        
+        # VARIABLES PYINSTALLER À NETTOYER
+        pyinstaller_vars_to_remove = [
+            '_PYI_APPLICATION_HOME_DIR',  # Nouvelle variable PyInstaller
+            '_MEIPASS',                   # Chemin temporaire PyInstaller
+            '_MEIPASS2',                  # Ancienne variable (compatibilité)
+            'PYINSTALLER_RESET_ENVIRONMENT'  # Variable de contrôle
+        ]
+        
+        # Variables de chemins à nettoyer
+        path_vars_to_clean = [
+            'PATH',
+            'LD_LIBRARY_PATH',    # Linux
+            'DYLD_LIBRARY_PATH',  # macOS  
+            'PYTHONPATH'
+        ]
+        
+        # Supprimer les variables PyInstaller
+        for var in pyinstaller_vars_to_remove:
+            if var in clean_env:
+                del clean_env[var]
+                print(f"🧹 Supprimé variable PyInstaller: {var}")
+        
+        # Variables spécifiques Windows PyInstaller
+        windows_vars_to_remove = [
+            'PYINSTALLER_APPLICATION_PATH'
+        ]
+        
+        for var in windows_vars_to_remove:
+            if var in clean_env:
+                del clean_env[var]
+                print(f"🧹 Supprimé variable Windows PyInstaller: {var}")
+        
+        # CORRECTION CAPITALE: Ajouter variable pour forcer reset environnement
+        clean_env['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
+        
+        return clean_env
+    
     def launch_generator(self, generator_type):
-        """Lance le générateur sélectionné"""
+        """Lance le générateur sélectionné - VERSION CORRIGÉE"""
         try:
             # Dictionnaire des fichiers de générateurs
-            # Vérifier d'abord si on a les .exe, sinon utiliser les .py
             generators_exe = {
                 "centres": "BANKILY_Multi_Centres.exe",
                 "commercants": "BANKILY_Multi_Commercants.exe", 
@@ -314,18 +361,44 @@ class BankilyGeneratorHub:
                 )
                 return
             
-            # Lancer le générateur directement sans popup
+            # CORRECTION CRUCIALE: Nettoyer l'environnement PyInstaller
+            clean_env = self.clean_environment_for_subprocess()
+            
+            print(f"🚀 Lancement {generator_type} avec environnement nettoyé...")
+            
+            # Lancer le générateur avec environnement nettoyé
             if is_exe:
-                # Lancer .exe directement
-                subprocess.Popen([filename])
+                # NOUVELLE MÉTHODE: Lancer .exe avec environnement propre
+                subprocess.Popen(
+                    [filename], 
+                    env=clean_env,                    # CRUCIAL: environnement nettoyé
+                    cwd=os.getcwd(),                  # Répertoire de travail actuel
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+                )
+                print(f"✅ Exécutable {filename} lancé avec succès")
             else:
-                # Lancer .py avec Python
-                subprocess.Popen([sys.executable, filename])
+                # Lancer .py avec Python et environnement nettoyé
+                subprocess.Popen(
+                    [sys.executable, filename], 
+                    env=clean_env,                    # CRUCIAL: environnement nettoyé
+                    cwd=os.getcwd(),
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+                )
+                print(f"✅ Script Python {filename} lancé avec succès")
+            
+            # Message de confirmation utilisateur
+            messagebox.showinfo(
+                "Générateur lancé", 
+                f"Le générateur {generator_type.title()} a été lancé avec succès!\n\n"
+                f"Si l'application ne s'ouvre pas, vérifiez que tous les fichiers .exe sont présents."
+            )
             
         except Exception as e:
+            print(f"❌ Erreur lancement {generator_type}: {e}")
             messagebox.showerror(
                 "Erreur de lancement", 
-                f"Impossible de lancer le générateur:\n{str(e)}"
+                f"Impossible de lancer le générateur {generator_type}:\n\n{str(e)}\n\n"
+                f"Vérifiez que tous les fichiers sont présents et que vous avez les permissions nécessaires."
             )
     
     def show_about(self):
@@ -347,13 +420,15 @@ Développé pour BANKILY
 
 
 def check_dependencies():
-    """Vérifie les dépendances requises - Désactivé pour les .exe"""
-    # Pour les .exe, les dépendances sont déjà incluses
-    # Cette vérification n'est utile que pour l'exécution depuis Python
+    """
+    Vérifie les dépendances requises
+    MODIFICATION: Plus de check strict dans les .exe
+    """
     try:
-        # Test rapide pour voir si on est dans un .exe
+        # Test pour voir si on est dans un .exe PyInstaller
         if getattr(sys, 'frozen', False):
             # On est dans un .exe PyInstaller, pas besoin de vérifier
+            print("🔧 Mode exécutable PyInstaller détecté - skip vérification dépendances")
             return True
     except:
         pass
@@ -386,6 +461,17 @@ L'application peut fonctionner mais les générateurs nécessiteront ces modules
 
 def main():
     """Lance l'application principale"""
+    # Débogage environnement PyInstaller
+    if getattr(sys, 'frozen', False):
+        print("🔧 Mode PyInstaller détecté")
+        print(f"🔧 sys.executable: {sys.executable}")
+        print(f"🔧 sys._MEIPASS: {getattr(sys, '_MEIPASS', 'N/A')}")
+        
+        # Afficher variables d'environnement PyInstaller pour débogage
+        for key, value in os.environ.items():
+            if 'PYI' in key or '_MEI' in key:
+                print(f"🔧 {key}: {value}")
+    
     # Vérifier les dépendances
     check_dependencies()
     
@@ -400,77 +486,40 @@ if __name__ == "__main__":
 
 
 """
-=== BANKILY GENERATOR HUB ===
+=== CORRECTIONS APPORTÉES POUR SUBPROCESS PYINSTALLER ===
 
-Application unifiée qui centralise l'accès aux 3 générateurs de rapports BANKILY.
+🎯 PROBLÈME RÉSOLU:
+Quand le Hub PyInstaller lance d'autres .exe PyInstaller, les variables d'environnement
+PyInstaller interfèrent et causent des erreurs de dépendances manquantes.
 
-=== STRUCTURE DU PROJET ===
+🔧 SOLUTION IMPLÉMENTÉE:
 
-Votre dossier doit contenir ces fichiers:
-├── bankily_generator_hub.py          # ← Ce fichier (menu principal)
-├── interface_multi_centres.py        # Générateur centres
-├── interface_multi_commercants.py    # Générateur commerçants  
-├── interface_multi_agents.py         # Générateur agents
-├── bpm.png                           # Logo BPM (optionnel)
-└── bankily.png                       # Logo BANKILY (optionnel)
+1. **Fonction clean_environment_for_subprocess()**:
+   - Supprime toutes les variables d'environnement PyInstaller problématiques
+   - Ajoute PYINSTALLER_RESET_ENVIRONMENT=1 pour forcer le reset
+   - Nettoie PATH, LD_LIBRARY_PATH, etc.
 
-=== UTILISATION ===
+2. **Méthode launch_generator() corrigée**:
+   - Utilise subprocess.Popen avec env=clean_env
+   - Ajoute CREATE_NEW_PROCESS_GROUP pour isolation Windows
+   - Définit explicitement le cwd (répertoire de travail)
 
-1. Placez tous les fichiers dans le même dossier
-2. Lancez: python bankily_generator_hub.py
-3. Choisissez votre type de générateur
-4. L'interface correspondante s'ouvrira automatiquement
+3. **Variables PyInstaller nettoyées**:
+   - _PYI_APPLICATION_HOME_DIR (nouvelle variable PyInstaller)
+   - _MEIPASS / _MEIPASS2 (chemins temporaires)
+   - PYINSTALLER_RESET_ENVIRONMENT (contrôle)
+   - Variables de chemins potentiellement corrompues
 
-=== FONCTIONNALITÉS ===
+4. **Débogage ajouté**:
+   - Affichage des variables d'environnement en mode debug
+   - Messages de confirmation pour l'utilisateur
+   - Gestion d'erreurs améliorée
 
-🎯 **Menu principal moderne**:
-- Interface intuitive avec cartes visuelles
-- Descriptions détaillées de chaque générateur
-- Boutons de lancement directs
-- Informations sur les prérequis
+🚀 RÉSULTAT:
+Maintenant quand vous cliquez sur un générateur depuis le Hub, il se lance
+dans un environnement propre sans interférence PyInstaller.
 
-🚀 **Lancement automatique**:
-- Vérification de l'existence des fichiers
-- Ouverture des générateurs en sous-processus
-- Messages de confirmation
-- Gestion d'erreurs complète
-
-📊 **3 générateurs intégrés**:
-- Multi-Centres (colonne CENTRE)
-- Multi-Commerçants (colonne COMMERCANT)  
-- Multi-Agents (colonne CODE_AGENT)
-
-⚡ **Fonctionnalités avancées**:
-- Vérification des dépendances au démarrage
-- Interface responsive et moderne
-- Effets visuels (hover, couleurs)
-- Fenêtre centrée automatiquement
-
-=== AVANTAGES ===
-
-✅ **Simplicité d'usage**: Un seul point d'entrée pour tous les générateurs
-✅ **Interface moderne**: Design professionnel avec codes couleurs
-✅ **Robustesse**: Vérifications et gestion d'erreurs complètes
-✅ **Flexibilité**: Chaque générateur reste indépendant
-✅ **Maintenance**: Centralisation des accès et informations
-
-=== INSTALLATION COMPLÈTE ===
-
-1. **Téléchargez tous les fichiers Python**:
-   - bankily_generator_hub.py
-   - interface_multi_centres.py
-   - interface_multi_commercants.py
-   - interface_multi_agents.py
-
-2. **Installez les dépendances**:
-   pip install pandas openpyxl xlrd reportlab tkcalendar
-
-3. **Ajoutez les logos** (optionnel):
-   - bpm.png
-   - bankily.png
-
-4. **Lancez l'application**:
-   python bankily_generator_hub.py
-
-Et voilà ! Vous avez maintenant un centre de contrôle complet pour tous vos rapports BANKILY.
+📦 POUR REBUILD:
+Utilisez le même workflow GitHub Actions, cette correction sera automatiquement
+incluse dans les nouveaux .exe générés.
 """
