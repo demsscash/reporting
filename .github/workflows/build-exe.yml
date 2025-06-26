@@ -1,4 +1,4 @@
-name: 🏦 Build BANKILY Windows Executables FIXED
+name: Build BANKILY Windows Executables FIXED
 
 on:
   push:
@@ -12,189 +12,138 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - name: 📥 Checkout code
+    - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: 🐍 Set up Python 3.11
+    - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     
-    - name: 📦 Install dependencies with fixed versions
+    - name: Install dependencies with fixed versions
       run: |
         python -m pip install --upgrade pip
         pip install pandas==2.1.4 openpyxl==3.1.2 xlrd==2.0.1 reportlab==4.0.8 tkcalendar==1.6.1
         pip install pyinstaller==6.3.0
         
-    - name: 🧪 Test imports before build
+    - name: Test imports before build
       run: |
-        python -c "import pandas; print('✅ pandas OK')"
-        python -c "import openpyxl; print('✅ openpyxl OK')" 
-        python -c "import xlrd; print('✅ xlrd OK')"
-        python -c "import reportlab; print('✅ reportlab OK')"
-        python -c "import tkcalendar; print('✅ tkcalendar OK')"
+        python -c "import pandas; print('pandas OK')"
+        python -c "import openpyxl; print('openpyxl OK')" 
+        python -c "import xlrd; print('xlrd OK')"
+        python -c "import reportlab; print('reportlab OK')"
+        python -c "import tkcalendar; print('tkcalendar OK')"
         
-    - name: 📁 Create assets directory if missing
+    - name: Create assets directory if missing
       run: |
         if (-not (Test-Path "assets")) {
           New-Item -ItemType Directory -Name "assets"
-          echo "📁 Assets directory created"
+          Write-Host "Assets directory created"
         } else {
-          echo "📁 Assets directory already exists"
+          Write-Host "Assets directory already exists"
         }
       shell: powershell
         
-    - name: 🏗️ Build Hub executable
+    - name: Build Hub executable
       run: |
-        echo "Building BANKILY Generator Hub..."
+        Write-Host "Building BANKILY Generator Hub..."
         pyinstaller bankily_hub.spec --clean --noconfirm
+      shell: powershell
         
-    - name: 🏢 Build Centres executable
+    - name: Build Centres executable
       run: |
-        echo "Building Multi-Centres..."
+        Write-Host "Building Multi-Centres..."
         pyinstaller centres.spec --clean --noconfirm
+      shell: powershell
         
-    - name: 🛒 Build Commercants executable
+    - name: Build Commercants executable
       run: |
-        echo "Building Multi-Commercants..."
+        Write-Host "Building Multi-Commercants..."
         pyinstaller commercants.spec --clean --noconfirm
+      shell: powershell
         
-    - name: 👤 Build Agents executable
+    - name: Build Agents executable
       run: |
-        echo "Building Multi-Agents..."
+        Write-Host "Building Multi-Agents..."
         pyinstaller agents.spec --clean --noconfirm
+      shell: powershell
     
-    - name: 📁 Verify build results
+    - name: Verify build results
       run: |
-        echo "=== Checking build results ==="
+        Write-Host "=== Checking build results ==="
         if (Test-Path "dist") {
           Get-ChildItem dist -Recurse | ForEach-Object {
             if ($_.Extension -eq ".exe") {
               $size = [math]::Round($_.Length / 1MB, 2)
-              echo "✅ $($_.Name) - $size MB"
+              Write-Host "$($_.Name) - $size MB"
             }
           }
         } else {
-          echo "❌ No dist folder found"
+          Write-Host "No dist folder found"
           exit 1
         }
       shell: powershell
     
-    - name: 📦 Create release package
+    - name: Create release package
       run: |
-        echo "Creating release package..."
+        Write-Host "Creating release package..."
         New-Item -ItemType Directory -Name "release_package" -Force
         
-        # Copy executables
         if (Test-Path "dist") {
           Copy-Item "dist\*.exe" "release_package\" -ErrorAction SilentlyContinue
-          echo "✅ Executables copied"
+          Write-Host "Executables copied"
         }
         
-        # Copy assets if they exist
         if (Test-Path "assets") {
           Copy-Item "assets" "release_package\assets" -Recurse -ErrorAction SilentlyContinue
-          echo "✅ Assets copied"
+          Write-Host "Assets copied"
         }
         
-        # Create comprehensive README using here-string
-        $readmeContent = @"
-🏦 BANKILY Generator Package - Windows Executables
-===============================================
-
-📋 CONTENU DU PACKAGE:
-=====================
-✅ BANKILY_Generator_Hub.exe         - Application principale (LANCEZ CELUI-CI)
-✅ BANKILY_Multi_Centres.exe         - Générateur centres  
-✅ BANKILY_Multi_Commercants.exe     - Générateur commerçants
-✅ BANKILY_Multi_Agents.exe          - Générateur agents
-📁 assets/                           - Logos (optionnel)
-
-🚀 UTILISATION:
-==============
-1. Extrayez TOUS les fichiers dans le même dossier
-2. Lancez BANKILY_Generator_Hub.exe (menu principal)
-3. Choisissez votre type de générateur
-4. L'application correspondante s'ouvrira automatiquement
-
-⚠️  IMPORTANT:
-=============
-• TOUS les fichiers .exe doivent être dans le même dossier
-• Ne déplacez pas les fichiers séparément
-• Si erreur "dépendances manquantes", redémarrez Windows
-• Antivirus peut nécessiter une exception pour les .exe
-
-🔧 DÉPANNAGE:
-============
-Problème: "Erreur de dépendances" au lancement d'un générateur
-Solution: 
-1. Fermez toutes les applications BANKILY
-2. Redémarrez l'ordinateur  
-3. Relancez BANKILY_Generator_Hub.exe
-4. Si le problème persiste, lancez directement le générateur voulu
-
-Problème: Application ne s'ouvre pas
-Solution:
-1. Vérifiez que Windows n'a pas bloqué les fichiers
-2. Clic droit > Propriétés > Débloquer (si présent)
-3. Ajoutez une exception antivirus pour le dossier
-4. Lancez en tant qu'administrateur si nécessaire
-
-📞 SUPPORT:
-==========
-En cas de problème, fournissez ces informations:
-• Version Windows (Win 10/11)
-• Message d'erreur exact
-• Antivirus utilisé
-• Emplacement des fichiers
-
-💡 CONSEILS:
-===========
-• Créez un dossier dédié (ex: C:\BANKILY\)
-• Ajoutez le dossier aux exceptions antivirus
-• Évitez les espaces dans le chemin du dossier
-• Gardez tous les .exe ensemble
-
-Développé pour BANKILY © 2025
-"@
-        
-        $readmeContent | Out-File -FilePath "release_package\README.txt" -Encoding UTF8
-        
-        # Create launch script using here-string
-        $launchScript = @"
-@echo off
-echo 🏦 BANKILY Generator Hub - Script de lancement
-echo.
-echo Tentative de lancement du Hub principal...
-echo.
-
-if not exist "BANKILY_Generator_Hub.exe" (
-    echo ❌ ERREUR: BANKILY_Generator_Hub.exe non trouvé
-    echo.
-    echo Vérifiez que tous les fichiers sont présents:
-    echo - BANKILY_Generator_Hub.exe
-    echo - BANKILY_Multi_Centres.exe  
-    echo - BANKILY_Multi_Commercants.exe
-    echo - BANKILY_Multi_Agents.exe
-    echo.
-    pause
-    exit /b 1
-)
-
-echo ✅ Hub trouvé, lancement...
-start "" "BANKILY_Generator_Hub.exe"
-
-echo ✅ Hub lancé!
-echo Ce script va se fermer dans 3 secondes...
-timeout /t 3 /nobreak >nul
-"@
-        
-        $launchScript | Out-File -FilePath "release_package\LANCER_BANKILY.bat" -Encoding ASCII
-        
-        echo "✅ Package créé avec documentation"
+        Write-Host "Package created"
       shell: powershell
     
-    - name: 🎯 Upload executables
+    - name: Create documentation files
+      run: |
+        # Create README
+        echo "BANKILY Generator Package - Windows Executables" > release_package/README.txt
+        echo "===============================================" >> release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "CONTENU DU PACKAGE:" >> release_package/README.txt
+        echo "- BANKILY_Generator_Hub.exe (Application principale)" >> release_package/README.txt
+        echo "- BANKILY_Multi_Centres.exe" >> release_package/README.txt
+        echo "- BANKILY_Multi_Commercants.exe" >> release_package/README.txt
+        echo "- BANKILY_Multi_Agents.exe" >> release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "UTILISATION:" >> release_package/README.txt
+        echo "1. Extrayez TOUS les fichiers dans le meme dossier" >> release_package/README.txt
+        echo "2. Lancez BANKILY_Generator_Hub.exe" >> release_package/README.txt
+        echo "3. Choisissez votre type de generateur" >> release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "IMPORTANT:" >> release_package/README.txt
+        echo "- TOUS les fichiers .exe doivent etre dans le meme dossier" >> release_package/README.txt
+        echo "- Si erreur dependances, redemarrez Windows" >> release_package/README.txt
+        echo "- Ajoutez une exception antivirus si necessaire" >> release_package/README.txt
+        echo "" >> release_package/README.txt
+        echo "Developpe pour BANKILY - 2025" >> release_package/README.txt
+        
+        # Create launch script
+        echo "@echo off" > release_package/LANCER_BANKILY.bat
+        echo "echo BANKILY Generator Hub - Script de lancement" >> release_package/LANCER_BANKILY.bat
+        echo "echo." >> release_package/LANCER_BANKILY.bat
+        echo "if not exist \"BANKILY_Generator_Hub.exe\" (" >> release_package/LANCER_BANKILY.bat
+        echo "    echo ERREUR: BANKILY_Generator_Hub.exe non trouve" >> release_package/LANCER_BANKILY.bat
+        echo "    pause" >> release_package/LANCER_BANKILY.bat
+        echo "    exit /b 1" >> release_package/LANCER_BANKILY.bat
+        echo ")" >> release_package/LANCER_BANKILY.bat
+        echo "echo Lancement du Hub..." >> release_package/LANCER_BANKILY.bat
+        echo "start \"\" \"BANKILY_Generator_Hub.exe\"" >> release_package/LANCER_BANKILY.bat
+        echo "echo Hub lance!" >> release_package/LANCER_BANKILY.bat
+        echo "timeout /t 3 /nobreak >nul" >> release_package/LANCER_BANKILY.bat
+        
+        echo "Documentation files created"
+      shell: bash
+    
+    - name: Upload executables
       uses: actions/upload-artifact@v4
       with:
         name: BANKILY-Windows-Executables-FIXED-${{ github.sha }}
@@ -202,42 +151,34 @@ timeout /t 3 /nobreak >nul
         retention-days: 60
         if-no-files-found: error
     
-    - name: 📊 Build summary
+    - name: Build summary
       shell: bash
       run: |
-        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-        ## 🏦 BANKILY Build Summary - FIXED VERSION
-        
-        ### ✅ Build completed successfully!
-        
-        ### 🔧 CORRECTIONS APPLIQUÉES:
-        - ✅ Hub PyInstaller nettoyage environnement subprocess
-        - ✅ Variables PYINSTALLER_RESET_ENVIRONMENT
-        - ✅ Isolation processus CREATE_NEW_PROCESS_GROUP
-        - ✅ Spec files optimisés et exclusions Hub
-        - ✅ Documentation et scripts de dépannage
-        
-        ### 📦 Fichiers générés:
-        - 🏦 **BANKILY_Generator_Hub.exe** (Menu principal)
-        - 🏢 BANKILY_Multi_Centres.exe
-        - 🛒 BANKILY_Multi_Commercants.exe
-        - 👤 BANKILY_Multi_Agents.exe
-        - 📄 README.txt + LANCER_BANKILY.bat
-        
-        ### 📥 Instructions de téléchargement:
-        1. Cliquez sur l'onglet **Actions** de ce repository
-        2. Sélectionnez ce build (avec ✅ vert)
-        3. Téléchargez: `BANKILY-Windows-Executables-FIXED-${{ github.sha }}`
-        4. **Extrayez TOUS les fichiers dans le MÊME dossier**
-        5. Lancez **BANKILY_Generator_Hub.exe**
-        
-        ### 🎯 PROBLÈME RÉSOLU:
-        Cette version corrige les erreurs de "dépendances manquantes"
-        lors du lancement des générateurs depuis le Hub principal.
-        
-        ### ⚠️ INSTRUCTIONS IMPORTANTES:
-        - **Tous les .exe doivent être dans le même dossier**
-        - **Lancez toujours le Hub principal en premier**
-        - **Si problème: utilisez LANCER_BANKILY.bat**
-        - **Ajoutez une exception antivirus si nécessaire**
-        EOF
+        echo "## BANKILY Build Summary - FIXED VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Build completed successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### CORRECTIONS APPLIQUEES:" >> $GITHUB_STEP_SUMMARY
+        echo "- Hub PyInstaller nettoyage environnement subprocess" >> $GITHUB_STEP_SUMMARY
+        echo "- Variables PYINSTALLER_RESET_ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+        echo "- Isolation processus CREATE_NEW_PROCESS_GROUP" >> $GITHUB_STEP_SUMMARY
+        echo "- Spec files optimises et exclusions Hub" >> $GITHUB_STEP_SUMMARY
+        echo "- Documentation et scripts de depannage" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Fichiers generes:" >> $GITHUB_STEP_SUMMARY
+        echo "- BANKILY_Generator_Hub.exe (Menu principal)" >> $GITHUB_STEP_SUMMARY
+        echo "- BANKILY_Multi_Centres.exe" >> $GITHUB_STEP_SUMMARY
+        echo "- BANKILY_Multi_Commercants.exe" >> $GITHUB_STEP_SUMMARY
+        echo "- BANKILY_Multi_Agents.exe" >> $GITHUB_STEP_SUMMARY
+        echo "- README.txt + LANCER_BANKILY.bat" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Instructions de telechargement:" >> $GITHUB_STEP_SUMMARY
+        echo "1. Cliquez sur l'onglet Actions de ce repository" >> $GITHUB_STEP_SUMMARY
+        echo "2. Selectionnez ce build (avec coche verte)" >> $GITHUB_STEP_SUMMARY
+        echo "3. Telechargez: BANKILY-Windows-Executables-FIXED-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "4. Extrayez TOUS les fichiers dans le MEME dossier" >> $GITHUB_STEP_SUMMARY
+        echo "5. Lancez BANKILY_Generator_Hub.exe" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### PROBLEME RESOLU:" >> $GITHUB_STEP_SUMMARY
+        echo "Cette version corrige les erreurs de dependances manquantes" >> $GITHUB_STEP_SUMMARY
+        echo "lors du lancement des generateurs depuis le Hub principal." >> $GITHUB_STEP_SUMMARY
