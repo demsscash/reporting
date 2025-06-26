@@ -283,25 +283,44 @@ class BankilyGeneratorHub:
         """Lance le générateur sélectionné"""
         try:
             # Dictionnaire des fichiers de générateurs
-            generators = {
+            # Vérifier d'abord si on a les .exe, sinon utiliser les .py
+            generators_exe = {
+                "centres": "BANKILY_Multi_Centres.exe",
+                "commercants": "BANKILY_Multi_Commercants.exe", 
+                "agents": "BANKILY_Multi_Agents.exe"
+            }
+            
+            generators_py = {
                 "centres": "interface_multi_centres.py",
                 "commercants": "interface_multi_commercants.py", 
                 "agents": "interface_multi_agents.py"
             }
             
-            filename = generators[generator_type]
+            # Essayer d'abord les .exe
+            filename = generators_exe[generator_type]
+            is_exe = True
+            
+            # Si .exe pas trouvé, essayer .py
+            if not os.path.exists(filename):
+                filename = generators_py[generator_type]
+                is_exe = False
             
             # Vérifier si le fichier existe
             if not os.path.exists(filename):
                 messagebox.showerror(
                     "Fichier non trouvé",
-                    f"Le fichier '{filename}' est introuvable.\n\n"
+                    f"Ni le fichier '{generators_exe[generator_type]}' ni '{generators_py[generator_type]}' ne sont trouvés.\n\n"
                     f"Assurez-vous que tous les générateurs sont dans le même dossier que cette application."
                 )
                 return
             
             # Lancer le générateur directement sans popup
-            subprocess.Popen([sys.executable, filename])
+            if is_exe:
+                # Lancer .exe directement
+                subprocess.Popen([filename])
+            else:
+                # Lancer .py avec Python
+                subprocess.Popen([sys.executable, filename])
             
         except Exception as e:
             messagebox.showerror(
@@ -328,7 +347,18 @@ Développé pour BANKILY
 
 
 def check_dependencies():
-    """Vérifie les dépendances requises"""
+    """Vérifie les dépendances requises - Désactivé pour les .exe"""
+    # Pour les .exe, les dépendances sont déjà incluses
+    # Cette vérification n'est utile que pour l'exécution depuis Python
+    try:
+        # Test rapide pour voir si on est dans un .exe
+        if getattr(sys, 'frozen', False):
+            # On est dans un .exe PyInstaller, pas besoin de vérifier
+            return True
+    except:
+        pass
+    
+    # Vérification seulement si on lance depuis Python
     required_modules = ['pandas', 'reportlab', 'tkcalendar']
     missing_modules = []
     
